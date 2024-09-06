@@ -4,45 +4,112 @@ IceCreamToken
 
 ## Description
 
-A simple ERC-20 token named "IceCream Token" with symbol "ICA". This project demonstrates the creation and deployment of an Ethereum-based ERC-20 token using Solidity and OpenZeppelin libraries. The `IceCreamToken` contract is an ERC-20 token that allows users to mint a predefined supply of tokens. It uses OpenZeppelin’s `ERC20` and `Ownable` contracts to provide standard token functionality and ownership features. The initial supply of 1000 tokens is minted to the contract deployer's address upon deployment.
+The `IceCreamToken` is an ERC20-compliant smart contract deployed on the Ethereum blockchain. It allows users to mint, burn, and transfer tokens. The contract includes basic functionalities for token management and includes error handling for security and operational robustness.
+
 
 ## Getting Started
 
 ### Installing
 use remix ide for the above 
 
-### Executing program
-1) use open zepplin to import the github file and token.
-2) use remix ide to write the code
-   // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+### Executing program.
+1) use remix ide to write the code
+  // SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.0.0/contracts/token/ERC20/ERC20.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v4.0.0/contracts/access/Ownable.sol";
+contract IceCreamToken {
+    string public name = "IceCream";
+    string public symbol = "ICRM";
+    uint8 public decimals = 18;
+    uint256 public totalSupply;
 
-contract IceCreamToken is ERC20, Ownable {
-    constructor() ERC20("IceCreamToken", "ICT") {
-        _mint(msg.sender, 100 * 10**decimals());
+    address public owner;
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Burn(address indexed burner, uint256 value);
+    event Mint(address indexed to, uint256 value);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only contract owner can call this function");
+        _;
     }
 
-
-    function mint(address to, uint256 amount) external onlyOwner {
-        _mint(to, amount);
+    constructor(uint256 _initialSupply) {
+        owner = msg.sender;
+        mint(owner, _initialSupply); // Mint initial supply to the contract owner
     }
 
+    function transfer(address _to, uint256 _value) public returns (bool success) {
+        require(_to != address(0), "Invalid recipient address");
+        require(_value <= balanceOf[msg.sender], "Insufficient balance");
 
-     
-    function burn(uint256 amount) external {
-        _burn(msg.sender, amount);
+        balanceOf[msg.sender] -= _value;
+        balanceOf[_to] += _value;
+        emit Transfer(msg.sender, _to, _value);
+        return true;
     }
 
-  
+    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success) {
+        require(_to != address(0), "Invalid recipient address");
+        require(_value <= balanceOf[_from], "Insufficient balance");
+        require(_value <= allowance[_from][msg.sender], "Allowance exceeded");
+
+        balanceOf[_from] -= _value;
+        balanceOf[_to] += _value;
+        allowance[_from][msg.sender] -= _value;
+
+        emit Transfer(_from, _to, _value);
+        return true;
+    }
+
+    function approve(address _spender, uint256 _value) public returns (bool success) {
+        allowance[msg.sender][_spender] = _value;
+        emit Approval(msg.sender, _spender, _value);
+        return true;
+    }
+
+    function mint(address _to, uint256 _value) public onlyOwner {
+        require(_to != address(0), "Invalid address to mint to");
+        totalSupply += _value;
+        balanceOf[_to] += _value;
+
+        emit Mint(_to, _value);
+        emit Transfer(address(0), _to, _value); // Corrected here
+    }
+
+    function burn(uint256 _value) public {
+        require(_value <= balanceOf[msg.sender], "Insufficient balance to burn");
+
+        balanceOf[msg.sender] -= _value;
+        totalSupply -= _value;
+
+        emit Burn(msg.sender, _value);
+        emit Transfer(msg.sender, address(0), _value);
+    }
+
+    // Explicitly reject Ether transfers
+    receive() external payable {
+        revert("Ether not accepted in this contract");
+    }
+
+    fallback() external payable {
+        revert("Ether not accepted in this contract");
+    }
 }
-3) compile the code
-4)deploy:-
-  a) mint the fucntion
-  b) burn the function 
-  c) then check whether it can only be done by the owner or not.
+
+2) compile the code
+
+  ## Features
+
+- **ERC20 Compliant**: Implements standard ERC20 token functionality.
+- **Minting**: Only the contract owner can mint new tokens.
+- **Burning**: Any user can burn their own tokens.
+- **Transfer**: Users can transfer tokens to other addresses.
+- **Error Handling**: Utilizes `require`, `assert`, and `revert` for robust error handling.
+
 
 ## Help
 
